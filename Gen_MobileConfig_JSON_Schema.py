@@ -80,7 +80,7 @@ def refine_properties_for_os_with_filter(properties, os_type):
 
             # Include all data under ['supportedOS'][osVersion] in the '_comment' key
             os_data = entry["supportedOS"][os_type]
-            value["_comment"] = json.dumps(os_data)
+            value["description"] += f"\n{json.dumps(os_data)}"
             refined_properties[key] = value
 
         # Apply the same logic for subkeys if they exist
@@ -92,6 +92,7 @@ def refine_properties_for_os_with_filter(properties, os_type):
 
     return refined_properties
 
+preference_domain = yaml_content["payload"]["payloadtype"]
 
 def encapsulate_json(schema, yaml_data):
     encapsulated_schema = {
@@ -101,8 +102,6 @@ def encapsulate_json(schema, yaml_data):
         "properties": schema["properties"]
     }
     return encapsulated_schema
-
-# Generating the third (final) portion of the code for review
 
 
 # Extract the properties
@@ -119,9 +118,9 @@ iOS_schema = encapsulate_json({"properties": iOS_properties_refined}, yaml_conte
 tvOS_schema = encapsulate_json({"properties": tvOS_properties_refined}, yaml_content)
 
 # File paths for saving the JSON schemas
-macOS_file_path = "GeneratedFiles/macOS_schema.json"
-iOS_file_path = "GeneratedFiles/iOS_schema.json"
-tvOS_file_path = "GeneratedFiles/tvOS_schema.json"
+macOS_file_path = f"{preference_domain}/{preference_domain}.macOS.schema.json"
+iOS_file_path = f"{preference_domain}/{preference_domain}.iOS.schema.json"
+tvOS_file_path = f"{preference_domain}/{preference_domain}.tvOS.schema.json"
 
 # Save the schemas to files
 with open(macOS_file_path, "w") as json_file:
