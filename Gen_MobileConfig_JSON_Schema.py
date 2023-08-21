@@ -17,22 +17,10 @@ def convert_yaml_to_json_schema(yaml_data):
         
         # Check for 'type'
         if "type" in entry:
-            type_value = entry["type"]
-            if type_value.startswith("<") and type_value.endswith(">"):
-                type_value = type_value[1:-1]  # Remove angle brackets
-            if type_value == "string":
-                prop["type"] = "string"
-            elif type_value == "boolean":
-                prop["type"] = "boolean"
-            elif type_value == "real":
-                prop["type"] = "number"
-            elif type_value == "integer":
-                prop["type"] = "integer"
-            elif type_value == "array":
-                prop["type"] = "array"
+            prop["type"] = convert_type(entry["type"])
             prop["anyOf"] = [{"type": "null", "title": "Not Configured"},
-                             {"title": "Configured", "type": prop["type"]}]
-        
+                        {"title": "Configured", "type": prop["type"]}]
+
         # Check for 'default' value
         if "default" in entry:
             prop["default"] = entry["default"]
@@ -51,6 +39,7 @@ def convert_yaml_to_json_schema(yaml_data):
                         # Check for 'rangelist' value
                         if "rangelist" in entry:
                             item["enum"] = entry["rangelist"]
+
 
         # Add 'description' if available
         if "content" in entry:
@@ -78,17 +67,17 @@ def refine_properties_for_os_with_filter(properties, os_type):
             if entry["supportedOS"][os_type].get("introduced") == "n/a":
                 continue
 
-            # Include all data under ['supportedOS'][osVersion] in the '_comment' key
+            # Include all data under ['supportedOS'][osVersion] in the 'description' key
             os_data = entry["supportedOS"][os_type]
             value["description"] += f"\n{json.dumps(os_data)}"
             refined_properties[key] = value
-
-        # Apply the same logic for subkeys if they exist
-        if "properties" in value:
-            refined_subkeys = refine_properties_for_os_with_filter_updated(value["properties"], os_type)
-            if refined_subkeys:
-                value["properties"] = refined_subkeys
-                refined_properties[key] = value
+            # Apply the same logic for subkeys if they exist
+            if entry.get("subkeys"):
+                for subkey in entry["subkeys"]:
+                    key_name = subkey["key"]
+                    type = convert_type(subkey["type"])
+                    description = subkey["title"]
+                    properties[key]["anyOf"][-1][key_name] = {"type": type, "description": description}
 
     return refined_properties
 
@@ -102,6 +91,22 @@ def encapsulate_json(schema, yaml_data):
         "properties": schema["properties"]
     }
     return encapsulated_schema
+
+
+def convert_type(type_value):
+        if type_value.startswith("<") and type_value.endswith(">"):
+            type_value = type_value[1:-1]  # Remove angle brackets
+        if type_value == "string":
+            return "string"
+        elif type_value == "boolean":
+            return "boolean"
+        elif type_value == "real":
+            return "number"
+        elif type_value == "integer":
+            return "integer"
+        elif type_value == "array":
+            return "array"
+        
 
 
 # Extract the properties
